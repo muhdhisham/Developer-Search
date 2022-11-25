@@ -3,8 +3,8 @@ from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.models import User
 from django.contrib import messages
-from django.contrib.auth.forms import UserCreationForm
 from .models import Profile
+from .forms import CustomUserCreationForm
 # Create your views here.
 
 
@@ -35,14 +35,29 @@ def loginUser(request):
 
 def logoutUser(request):
     logout(request)
-    messages.error(request, 'User was successfully logged out')
+    messages.info(request, 'User was successfully logged out')
     return redirect('login')
-
 
 
 def registerUser(request):
     page = 'register'
-    context = {'page':page}
+    form = CustomUserCreationForm()
+    
+    if request.method == 'POST':
+        form = CustomUserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save(commit=False)
+            user.username = user.username.lower()
+            user.save()
+            
+            messages.success(request, 'User account was created!')
+            
+            login(request, user)
+            return redirect('profiles')
+        else:
+            messages.error(request, 'An error occurred')
+            
+    context = {'form':form,'page':page}
     return render(request, 'users/login_register.html', context)
 
 
@@ -59,3 +74,13 @@ def userProfile(request,pk):
     otherSkills = profile.skill_set.filter(description="")
     context = {'profile': profile,'topSkills':topSkills, 'otherSkills':otherSkills}
     return render(request, 'users/user-profile.html', context)
+
+
+@login_required(login_url='login')
+def userAccount(request):
+    profile = request.user.profile
+    
+    
+    
+    context = {'profile':profile}
+    return render(request, 'users/account.html', context)
