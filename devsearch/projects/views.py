@@ -1,20 +1,26 @@
-from multiprocessing import context
 from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-# Create your views here.
 from django.http import HttpResponse
-
-from .models import Project
+from django.contrib.auth.decorators import login_required
+from django.db.models import Q
+from .models import Project, Tag
 from .forms import ProjectForm
+from .utils import searchProjects
+# Create your views here.
+
+
+
 def projects(request):
-    projects = Project.objects.all()
-    context = {'projects':projects}
+    projects, search_query =  searchProjects(request)
+    context = {'projects':projects, 'search_query':search_query}
     return render(request, 'projects/projects.html', context)
+    
+    
     
 def project(request, pk):
     projectObj = Project.objects.get(id=pk)
     tags = projectObj.tags.all()
     return render(request, 'projects/single-project.html', {"project":projectObj, 'tags':tags})
+  
   
   
 @login_required(login_url="login") 
@@ -29,12 +35,12 @@ def createProject(request):
             project.owner = profile
             project.save()
             return redirect('account')
-        # print(request.POST)
-        
-        
+        # print(request.POST)   
     
     context = {'form':form}
     return render(request, 'projects/project_form.html',context)
+
+
 
 @login_required(login_url="login") 
 def updateProject(request, pk):  
